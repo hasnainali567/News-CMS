@@ -1,11 +1,11 @@
 import express from 'express';
-import newsRoutes from './news.routes.js';
-import commentsRoutes from './comments.routes.js';
-import categoryRoutes from './category.routes.js';
 
 const router = express.Router();
-router.use('/news', newsRoutes);
-router.use('/comments', commentsRoutes);
-router.use('/categories', categoryRoutes);
+router.get('/', getAllNews);
+router.get('/:id', getNewsById);
+router.get('/category/:category', getNewsByCategory);
+router.get('/search', searchNews);
+router.get('/authors/:authorId', getNewsByAuthor);
+router.post('/:id/add-comment', addCommentToNews);
 
 export default router;

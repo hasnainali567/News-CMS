@@ -1,7 +1,7 @@
-import asyncHandler from "../../utils/AsyncHandler";
+import asyncHandler from "../../utils/AsyncHandler.js";
 
 const allComments = asyncHandler(async (req, res) => {
-    // Logic to fetch and display all comments
+    res.render('admin/comments/');
 });
 
 export {

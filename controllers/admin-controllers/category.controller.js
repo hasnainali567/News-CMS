@@ -4,11 +4,11 @@ import ApiResponse from '../../utils/ApiResponse.js';
 
 
 const allCategories = asyncHandler(async (req, res) => {
-    // Your logic to get all categories
+    res.render('admin/categories/');
 });
 
 const addCategoryPage = asyncHandler(async (req, res) => {
-    // Your logic to render add category page
+    res.render('admin/categories/create');
 });
 
 const addCategory = asyncHandler(async (req, res) => {
@@ -16,7 +16,7 @@ const addCategory = asyncHandler(async (req, res) => {
 });
 
 const updateCategoryPage = asyncHandler(async (req, res) => {
-    // Your logic to render update category page
+    res.render('admin/categories/update');
 });
 
 const updateCategory = asyncHandler(async (req, res) => {

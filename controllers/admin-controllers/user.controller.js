@@ -1,8 +1,10 @@
+import ApiResponse from '../../utils/ApiResponse.js';
 import asyncHandler from '../../utils/AsyncHandler.js';
+import User from '../../models/user.model.js';
 
 
 const LoginPage = asyncHandler(async (req, res) => {
-    // Your logic to render login page
+    res.render('admin/login', { layout: false });
 });
 
 const LoginAdmin = asyncHandler(async (req, res) => {
@@ -14,19 +16,24 @@ const LogoutAdmin = asyncHandler(async (req, res) => {
 });
 
 const allUsers = asyncHandler(async (req, res) => {
-    // Your logic to get all users
+    res.render('admin/users/');
 });
 
 const addUserPage = asyncHandler(async (req, res) => {
-    // Your logic to render add user page
+    res.render('admin/users/create');
 });
 
 const addUser = asyncHandler(async (req, res) => {
-    // Your logic to add a new user
+    if (!req.body || Object.keys(req.body).length === 0) throw new ApiError(400, 'Please provide user details');
+    const { fullName, userName, password, role } = req.body;
+
+    await User.create({ fullName, userName, password, role });
+
+    res.status(201).redirect('/admin/users');
 });
 
 const updateUserPage = asyncHandler(async (req, res) => {
-    // Your logic to render update user page
+    res.render('admin/users/update');
 });
 
 const updateUser = asyncHandler(async (req, res) => {
@@ -35,6 +42,10 @@ const updateUser = asyncHandler(async (req, res) => {
 
 const deleteUser = asyncHandler(async (req, res) => {
     // Your logic to delete a user
+});
+
+const dashBordPage = asyncHandler(async (req, res) => {
+    res.render('admin/dashboard');
 });
 
 export {
@@ -46,7 +57,7 @@ export {
     deleteUser,
     LoginPage,
     LoginAdmin,
-    LogoutAdmin
-    
+    LogoutAdmin,
+    dashBordPage
 };
 

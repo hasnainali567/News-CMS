@@ -9,8 +9,14 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const allNews = asyncHandler(async (req, res) => {
-    const articles = await News.find().populate('category', 'name').populate('author', 'fullName');
 
+    const role = req.role;
+    let articles;
+    if (role === 'admin') {
+        articles = await News.find().populate('category', 'name').populate('author', 'fullName');
+    } else {
+        articles = await News.find({ author: req.admin.userId }).populate('category', 'name').populate('author', 'fullName');
+    }
     res.render('admin/articles/', { role: req.role, articles });
 });
 

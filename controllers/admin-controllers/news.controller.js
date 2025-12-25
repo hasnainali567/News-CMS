@@ -56,6 +56,12 @@ const updateNewsPage = asyncHandler(async (req, res) => {
     const newsId = req.params.id;
     const newsItem = await News.findById(newsId).populate('category', 'name').populate('author', 'fullName');
 
+    if (!newsItem) {
+        throw new ApiError(404, 'News item not found');
+    }
+    if (req.role !== 'admin' && newsItem.author._id.toString() !== req.admin.userId) {
+        throw new ApiError(403, 'You do not have permission to edit this news item');
+    }
     const categories = await Category.find();
     res.render('admin/articles/update', { role: req.role, newsItem: newsItem, categories });
 });
@@ -67,6 +73,10 @@ const updateNews = asyncHandler(async (req, res) => {
 
         if (!newsItem) {
             throw new ApiError(404, 'News item not found');
+        }
+
+        if (req.role !== 'admin' && newsItem.author._id.toString() !== req.admin.userId) {
+            throw new ApiError(403, 'You do not have permission to edit this news item');
         }
 
         if (req.body.title) {
@@ -103,6 +113,9 @@ const deleteNews = asyncHandler(async (req, res) => {
     const newsItem = await News.findById(newsId);
     if (!newsItem) {
         throw new ApiError(404, 'News item not found');
+    }
+    if (req.role !== 'admin' && newsItem.author._id.toString() !== req.admin.userId) {
+        throw new ApiError(403, 'You do not have permission to delete this news item');
     }
     if (newsItem.image) {
         const imagePath = path.join(__dirname, '../../', 'public', 'uploads', newsItem.image);

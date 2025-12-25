@@ -4,11 +4,9 @@ export const globalErrorHandler = (err, req, res, next) => {
   const errorStack = err.stack || '';
   
   console.error(err);
-  res.status(errorStatus).json({
+  res.status(errorStatus).send({
     success: false,
     message: errorMessage,
-    stack: errorStack,
     error: err.errors || [],
   });
-
 };

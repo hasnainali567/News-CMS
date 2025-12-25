@@ -16,7 +16,8 @@ const LogoutAdmin = asyncHandler(async (req, res) => {
 });
 
 const allUsers = asyncHandler(async (req, res) => {
-    res.render('admin/users/');
+    const users =  await User.find();
+    res.render('admin/users/', {users});
 });
 
 const addUserPage = asyncHandler(async (req, res) => {

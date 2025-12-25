@@ -7,6 +7,7 @@ import 'dotenv/config.js';
 import frontendRoutes from './routes/frontendRoutes/router.js';
 import adminRoutes from './routes/adminRoutes/router.js';
 import { globalErrorHandler } from './middlewares/error.middleware.js';
+import cookieParser from 'cookie-parser';
 
 const filePath = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(filePath);
@@ -17,6 +18,7 @@ const app = express();
 
 // Middleware setup
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(expressLayout);

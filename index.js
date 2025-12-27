@@ -26,8 +26,6 @@ app.set('layout', 'layout');
 app.set('view engine', 'ejs');
 
 
-app.use('/news', frontendRoutes);
-
 app.use('/admin', (req, res, next) => {
     res.locals.layout = 'admin/layout';
     next();
@@ -35,6 +33,9 @@ app.use('/admin', (req, res, next) => {
 );
 
 app.use('/admin', adminRoutes);
+
+app.use('/', frontendRoutes);
+
 app.use(globalErrorHandler);
 
 //Connect to MongoDB and start the server

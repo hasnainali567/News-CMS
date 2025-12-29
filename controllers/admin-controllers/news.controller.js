@@ -152,7 +152,8 @@ const updateNews = asyncHandler(async (req, res) => {
 });
 
 const deleteNews = asyncHandler(async (req, res) => {
-
+    console.log(req.params);
+    
     const newsId = req.params.id;
     const newsItem = await News.findById(newsId);
     if (!newsItem) {
@@ -170,7 +171,8 @@ const deleteNews = asyncHandler(async (req, res) => {
         });
     }
     await News.findByIdAndDelete(newsId);
-    res.redirect('/admin/news');
+    // res.redirect('/admin/news');
+    res.status(200).json({ message: 'News item deleted successfully' });
 });
 
 export {

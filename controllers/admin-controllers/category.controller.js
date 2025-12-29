@@ -64,12 +64,19 @@ const updateCategory = asyncHandler(async (req, res) => {
         return res.status(400).render('admin/categories/update', { role: req.role, category, errors : errorMessages });
     }
 
+    const category = await Category.findById(id)
 
-    const { name, description } = req.body;
-    await Category.findByIdAndUpdate(id, {
-        name: name.trim(),
-        description
-    });
+    if (!category) {
+        throw new ApiError(404, 'Category not Found');
+    }
+
+    Object.assign(category, {
+        ...(req.body.name && { name: req.body.name.trim() }),
+        ...(req.body.description && { description: req.body.description })
+    })
+
+    await category.save();
+    
     res.redirect('/admin/categories');
 
 });
@@ -78,10 +85,12 @@ const deleteCategory = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const news = await News.find({ category: id });
     if (news.length > 0) {
-        throw new ApiError(400, 'Cannot delete category with associated news articles');
+        // throw new ApiError(400, 'Cannot delete category with associated news articles');
+        return res.status(400).send('Cannot delete category with associated news articles');
     }
     await Category.findByIdAndDelete(id);
-    res.redirect('/admin/categories');
+    // res.redirect('/admin/categories');
+    res.status(200).send('Category deleted successfully');
 });
 
 export {

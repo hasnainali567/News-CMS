@@ -1,6 +1,8 @@
 import asyncHandler from '../../utils/AsyncHandler.js';
 import ApiError from '../../utils/ApiError.js';
 import Category from '../../models/category.model.js';
+import News from '../../models/news.model.js';
+import { validationResult } from 'express-validator';
 
 
 const allCategories = asyncHandler(async (req, res) => {
@@ -10,19 +12,25 @@ const allCategories = asyncHandler(async (req, res) => {
 });
 
 const addCategoryPage = asyncHandler(async (req, res) => {
-    res.render('admin/categories/create', { role: req.role });
+    res.render('admin/categories/create', { role: req.role, errors: null });
 });
 
 const addCategory = asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    let errorMessages = [];
+    const name = req.body.name || '';
+    const description = req.body.description || '';
 
-    if (!req.body || !req.body.name || req.body.name.trim() === '') {
-        throw new ApiError(400, 'Category name is required');
-    }
-    const { name, description } = req.body;
     const existingCategory = await Category.findOne({ name: name.trim() }).lean();
     if (existingCategory) {
-        throw new ApiError(400, 'Category with this name already exists');
+        errorMessages.push('Category name already exists');
     }
+
+    if (!errors.isEmpty() || errorMessages.length > 0) {
+        errorMessages = [...errorMessages, ...errors.array().map(err => err.msg)];
+        return res.status(400).render('admin/categories/create', { role: req.role, errors : errorMessages });
+    }
+
     await Category.create({
         name: name.trim(),
         description
@@ -36,15 +44,26 @@ const updateCategoryPage = asyncHandler(async (req, res) => {
     if (!category) {
         throw new ApiError(404, 'Category not found');
     }
-    res.render('admin/categories/update', { role: req.role, category });
+    res.render('admin/categories/update', { role: req.role, category, errors: null });
 });
 
 const updateCategory = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    if (!req.body || !req.body.name || req.body.name.trim() === '') {
-        throw new ApiError(400, 'Category name is required');
+    const errors = validationResult(req);
+    let errorMessages = [];
+
+    const existingCategory = await Category.findOne({ name: req.body.name.trim(), _id: { $ne: id } }).lean();
+    if (existingCategory) {
+        errorMessages.push('Category name already exists');
     }
+
+    if (!errors.isEmpty() || errorMessages.length > 0) {
+        errorMessages = [...errorMessages, ...errors.array().map(err => err.msg)];
+        const category = await Category.findById(id);
+        return res.status(400).render('admin/categories/update', { role: req.role, category, errors : errorMessages });
+    }
+
 
     const { name, description } = req.body;
     await Category.findByIdAndUpdate(id, {
@@ -57,6 +76,10 @@ const updateCategory = asyncHandler(async (req, res) => {
 
 const deleteCategory = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const news = await News.find({ category: id });
+    if (news.length > 0) {
+        throw new ApiError(400, 'Cannot delete category with associated news articles');
+    }
     await Category.findByIdAndDelete(id);
     res.redirect('/admin/categories');
 });

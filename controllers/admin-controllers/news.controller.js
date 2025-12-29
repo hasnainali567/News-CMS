@@ -5,6 +5,8 @@ import ApiError from '../../utils/ApiError.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { error } from 'console';
+import { validationResult } from 'express-validator';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -22,34 +24,44 @@ const allNews = asyncHandler(async (req, res) => {
 
 const addNewsPage = asyncHandler(async (req, res) => {
     const categories = await Category.find();
-
-    res.render('admin/articles/create', { role: req.role, categories });
+    res.render('admin/articles/create', { role: req.role, categories, errors: null });
 });
 
 const addNews = asyncHandler(async (req, res) => {
-    try {
-        if (!req.body || Object.keys(req.body).length === 0) {
-            throw new ApiError('Form data is missing');
-        }
-        if (!req.file) {
-            throw new ApiError('Image file is required');
-        }
-        const { title, content, category } = req.body;
-        const imagePath = req.file.filename;
 
+    const errors = validationResult(req);
+    const categories = await Category.find();
 
-        await News.create({
-            title,
-            content,
-            category,
-            image: imagePath,
-            author: req.admin.userId
-        });
+    let errorMessages = [];
 
-        res.redirect('/admin/news');
-    } catch (error) {
-        res.status(400).send({ error: error.message });
+    if (req.uploadError) {
+        errorMessages.push(req.uploadError);
     }
+    if (!errors.isEmpty() || req.uploadError) {
+        if (req.file) {
+            fs.unlink(path.join(__dirname, '../../public/uploads', req.file.filename), (err) => {
+                if (err) {
+                    console.error('Error deleting file after validation failure:', err);
+                }
+            });
+        }
+        errorMessages = [...errorMessages, ...errors.array().map(err => err.msg)];
+        return res.status(400).render('admin/articles/create', { role: req.role, categories, errors: errorMessages });
+    }
+
+    const { title, content, category } = req.body;
+    const imagePath = req.file.filename;
+
+
+    await News.create({
+        title,
+        content,
+        category,
+        image: imagePath,
+        author: req.admin.userId
+    });
+
+    res.redirect('/admin/news');
 });
 
 const updateNewsPage = asyncHandler(async (req, res) => {
@@ -63,52 +75,84 @@ const updateNewsPage = asyncHandler(async (req, res) => {
         throw new ApiError(403, 'You do not have permission to edit this news item');
     }
     const categories = await Category.find();
-    res.render('admin/articles/update', { role: req.role, newsItem: newsItem, categories });
+    res.render('admin/articles/update', { role: req.role, newsItem: newsItem, categories, errors: null });
 });
 
 const updateNews = asyncHandler(async (req, res) => {
-    try {
-        const newsId = req.params.id;
-        const newsItem = await News.findById(newsId);
 
-        if (!newsItem) {
-            throw new ApiError(404, 'News item not found');
-        }
+    const errors = validationResult(req);
+    const categories = await Category.find();
+    const newsItem = await News.findById(req.params.id);
 
-        if (req.role !== 'admin' && newsItem.author._id.toString() !== req.admin.userId) {
-            throw new ApiError(403, 'You do not have permission to edit this news item');
-        }
+    let errorMessages = [];
 
-        if (req.body.title) {
-            newsItem.title = req.body.title;
-        }
-        if (req.body.content) {
-            newsItem.content = req.body.content;
-        }
-        if (req.body.category) {
-            newsItem.category = req.body.category;
-        }
-        if (req.file) {
-            if (newsItem.image) {
-                const imagePath = path.join(__dirname, '../../', 'public', 'uploads', newsItem.image);
-                fs.unlink(imagePath, (err) => {
-                    if (err) {
-                        console.error('Error deleting image:', err);
-                    }
-                });
-            }
-            newsItem.image = req.file.filename;
-        }
-
-        await newsItem.save();
-
-        res.redirect('/admin/news');
-    } catch (error) {
-        res.status(400).send({ error: error.message });
+    // not found
+    if (!newsItem) {
+        errorMessages.push('News item not found');
     }
+
+    // permission check (only if news exists)
+    if (
+        newsItem &&
+        req.role !== 'admin' &&
+        newsItem.author._id.toString() !== req.admin.userId
+    ) {
+        errorMessages.push('You do not have permission to edit this news item');
+    }
+
+    // multer error
+    if (req.uploadError) {
+        errorMessages.push(req.uploadError.message);
+    }
+
+    // validator errors
+    if (!errors.isEmpty()) {
+        errorMessages.push(
+            ...errors.array().map(err => err.msg)
+        );
+    }
+
+    // stop if any error
+    if (errorMessages.length > 0) {
+        if (req.file) {
+            fs.unlink(path.join(__dirname, '../../public/uploads', req.file.filename), (err) => {
+                if (err) {  
+                    console.error('Error deleting file after validation failure:', err);
+                }
+            });
+        }
+        return res.status(400).render('admin/articles/update', {
+            role: req.role,
+            categories,
+            newsItem,
+            errors: errorMessages
+        });
+    }
+
+    // update only provided fields
+    Object.assign(newsItem, {
+        ...(req.body.title && { title: req.body.title }),
+        ...(req.body.content && { content: req.body.content }),
+        ...(req.body.category && { category: req.body.category })
+    });
+
+    // image update (optional)
+    if (req.file) {
+        if (newsItem.image) {
+            fs.unlink(
+                path.join(__dirname, '../../public/uploads', newsItem.image),
+                () => { }
+            );
+        }
+        newsItem.image = req.file.filename;
+    }
+
+    await newsItem.save();
+    res.redirect('/admin/news');
 });
 
 const deleteNews = asyncHandler(async (req, res) => {
+
     const newsId = req.params.id;
     const newsItem = await News.findById(newsId);
     if (!newsItem) {

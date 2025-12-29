@@ -37,13 +37,32 @@
             {
                 title: 'Actions', formatter: function (cell, formatterParams, onRendered) {
                     return `<a class="edit btn btn-sm btn-primary" href="/admin/update-user/${cell.getData()._id}"><i class="fa fa-edit"></i> Edit </a>
-                            <a class="delete btn btn-sm btn-danger" href="/admin/delete-user/${cell.getData()._id}"><i class="fa fa-trash-o"></i></a>`;
+                            <a class="delete btn btn-sm btn-danger" onclick="deleteUser('${cell.getData()._id}')"><i class="fa fa-trash-o"></i></a>`;
                 }
             }
         ],
     });
 
-    // const
+
+    const deleteUser = async (id) => {
+        try {
+            const confirmDelete = confirm("Are you sure you want to delete this user?");
+            if (confirmDelete) {
+                const response = await fetch(`/admin/delete-user/${id}`, {
+                    method: 'DELETE',
+                });
+                if (response.ok) {
+                    alert('User deleted successfully');
+                    location.reload();
+                } else if (response.status === 400) {
+                    alert(await response.text());
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            alert('An error occurred while deleting the user.');   
+        }
+    }
 </script>
 
 <%- contentFor('tabulatorCss') %>

@@ -1,0 +1,9 @@
+<% if (errors && Array.isArray(errors)) { %>
+    <ul class="alert alert-danger mt-3">
+        <% errors.forEach(function(err) { %>
+            <li>
+                <%= err %>
+            </li>
+            <% }); %>
+    </ul>
+    <% } %>

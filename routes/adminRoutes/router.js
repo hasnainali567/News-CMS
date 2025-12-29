@@ -24,5 +24,20 @@ router.get('/comments', allComments);
 
 router.use('/settings', adminMiddleware, settingRouter);
 
+//404 middleware 
+
+router.use((req, res, next) => {
+    const role = req.role || 'author';
+    res.status(404).render('admin/404', { role: role, error: 'Page not found' });
+});
+
+
+//500 middleware
+router.use((err, req, res, next) => {
+    const errorStatus = err.status || 500;
+    const view = errorStatus === 404 ? 'admin/404' : 'admin/500';
+    const role = req.role || 'author';
+    res.status(errorStatus).render(view, { role: role, error: err.message || 'Something went wrong', status: errorStatus });
+});
 
 export default router;
